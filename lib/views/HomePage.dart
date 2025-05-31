@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:responsi_prak_mob/models/BookmarkModel.dart';
 import 'package:responsi_prak_mob/models/PhoneModel.dart';
 import 'package:responsi_prak_mob/presenters/phone_presenter.dart';
+import 'package:responsi_prak_mob/services/BookmarkService.dart';
 import 'package:responsi_prak_mob/views/PhoneForm.dart';
 import 'package:responsi_prak_mob/views/DetailPage.dart';
 
@@ -15,6 +17,7 @@ class _HomePageState extends State<HomePage> implements PhoneView {
   bool? onDeleteStatus;
   int currentPageIndex = 0;
   List<PhoneModel> _phoneDataList = [];
+  List<BookmarkPhone> _bookmarks = [];
   late PhonePresenter _presenter;
   bool _isLoading = false;
   String? _errorMessage;
@@ -26,6 +29,15 @@ class _HomePageState extends State<HomePage> implements PhoneView {
     _presenter = PhonePresenter(this);
     showLoading();
     _presenter.loadAllPhoneData();
+    loadBookmarks();
+  }
+
+  void loadBookmarks() async {
+    final bookmarks = await BookmarkService.getAllBookmarks();
+    setState(() {
+      _bookmarks = bookmarks;
+    });
+    print("ini isi bookmark: $_bookmarks");
   }
 
   @override
@@ -40,6 +52,9 @@ class _HomePageState extends State<HomePage> implements PhoneView {
           setState(() {
             currentPageIndex = index;
           });
+          if(index==1){
+            loadBookmarks();
+          }
         },
         indicatorColor: Colors.green,
         selectedIndex: currentPageIndex,
@@ -202,8 +217,86 @@ class _HomePageState extends State<HomePage> implements PhoneView {
         //Index 1
         Column(
           children: [
-            Center(
-              child: Text("Halaman Bookmark!"),
+            SizedBox(
+              height: 400, // sesuaikan tinggi container
+              child: ListView.builder(
+                itemCount: _bookmarks.length,
+                itemBuilder: (context, index) {
+                  final phone = _bookmarks[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                          builder: (context) =>DetailPage(id: phone.id!),
+                          ),
+                        );
+                        setState(() {
+                          currentPageIndex=0;
+                        });
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                phone.img_url,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[300],
+                                  child: Icon(Icons.broken_image, size: 30),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    phone.name,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    phone.brand,
+                                    style: TextStyle(
+                                        color: Colors.grey[600], fontSize: 14),
+                                  ),
+                                  Text(
+                                    '\$${phone.price}',
+                                    style: TextStyle(
+                                      color: Colors.green[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             )
           ],
         )

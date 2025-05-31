@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:responsi_prak_mob/models/BookmarkModel.dart';
 import 'package:responsi_prak_mob/models/PhoneModel.dart';
 import 'package:responsi_prak_mob/presenters/phone_presenter.dart';
+import 'package:responsi_prak_mob/services/BookmarkService.dart';
 import 'package:responsi_prak_mob/views/HomePage.dart';
 import 'package:responsi_prak_mob/views/PhoneForm.dart';
 
@@ -18,6 +20,7 @@ class _DetailPageState extends State<DetailPage> implements PhoneView {
   late PhonePresenter _presenter;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isBookmarked = false;
 
   @override
   void initState() {
@@ -25,6 +28,28 @@ class _DetailPageState extends State<DetailPage> implements PhoneView {
     _presenter = PhonePresenter(this);
     showLoading();
     _presenter.loadPhoneDetailData(widget.id);
+    _checkBookmarkStatus();
+  }
+
+  void _checkBookmarkStatus() async {
+    bool status = await BookmarkService.isBookmarked(widget.id);
+    setState(() {
+      _isBookmarked = status;
+    });
+  }
+
+  // Fungsi toggle bookmark: kalau sudah ada hapus, kalau belum tambah
+  void _toggleBookmark(PhoneModel phone) async {
+    if (_isBookmarked) {
+      await BookmarkService.removeBookmark(widget.id);
+    } else {
+      await BookmarkService.addBookmark(
+        BookmarkPhone(id:phone.id ,name: phone.name, brand: phone.brand, price: phone.price, img_url: phone.img_url, specification: phone.specification)
+      );
+    }
+    setState(() {
+      _isBookmarked = !_isBookmarked;
+    });
   }
 
   @override
@@ -34,7 +59,14 @@ class _DetailPageState extends State<DetailPage> implements PhoneView {
           title: Text("Phone Detail"),
           backgroundColor: Colors.green.shade700,
           actions: [
-            IconButton(onPressed: () => {}, icon: Icon(Icons.bookmark_border))
+            IconButton(
+              icon: Icon(_isBookmarked ? Icons.bookmark : Icons.bookmark_border),
+              onPressed: () {
+                if (_phoneDetailData != null) {
+                  _toggleBookmark(_phoneDetailData!);
+                }
+              }
+            )
           ]),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
